@@ -318,6 +318,40 @@
                   h6 Favorites
                   .lib-favorites
 
+#compiler-selection.modal.fade.gl_keep(tabindex="-1" role="dialog")
+  .modal-dialog.modal-lg
+    .modal-content
+      .modal-header
+        h5.modal-title Compilers
+        button.close(type="button" data-dismiss="modal" aria-hidden="true" aria-label="Close")
+          span(aria-hidden="true")
+            | &times;
+      .modal-body
+        .card
+          .card-body
+            .container
+              .row
+                .col-lg
+                  div(style='text-align: center')
+                    input.compiler-search-input(value="" placeholder="Search text")
+                    button.btn.btn-primary.compiler-search-button(type="button") Search
+                    hr
+              .row
+                .col-lg.compilers-how-to-use ...
+              .row
+                .col-lg &nbsp;
+              .row
+                .compilers-selected-col.col-md
+                  div
+                    h6 Selected
+                  .compilers-selected-items
+                .compilers-results-col.col-md
+                  h6 Results
+                  .compiler-results-items
+                .compilers-favorites-col.col-md
+                  h6 Favorites
+                  .compiler-favorites
+
 #timing-info.modal.fade.gl_keep(tabindex="-1" role="dialog")
   .modal-dialog.modal-lg
     .modal-content

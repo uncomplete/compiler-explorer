@@ -96,6 +96,10 @@
         button.btn.btn-sm.btn-light.show-libs(title="Include libs" aria-label="Toggle libraries dropdown")
           span.fas.fa-book
           span.hideable &nbsp;Libraries
+      .btn-group.btn-group-sm(role="group" aria-label="Compiler")
+        button.btn.btn-sm.btn-light.show-compilers(title="Select compiler" aria-label="Select a compiler")
+          span.fas.fa-book
+          span.hideable &nbsp;Compilers
       .btn-group.btn-group-sm(role="group")
         button.btn.btn-sm.btn-light.dropdown-toggle.add-pane(type="button" title="Add a new pane" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" aria-label="Add new element for this compiler")
           span.fas.fa-plus
@@ -385,6 +389,13 @@
         | You can suggest us one at any time&nbsp;
         sup.fas.fa-external-link-alt.opens-new-window(title="Opens in a new window")
 
+  #compilers-dropdown
+    .no-compilers
+      p No compilers configured for this language yet.
+      a(target="_blank" rel="noopener noreferrer" href="https://github.com/compiler-explorer/compiler-explorer/issues/new")
+        | You can suggest us one at any time&nbsp;
+        sup.fas.fa-external-link-alt.opens-new-window(title="Opens in a new window")
+
   #libs-entry
     .input-group.input-group-sm
       .input-group-prepend
@@ -422,3 +433,21 @@
           span.lib-fav
             button.btn.btn-sm.lib-fav-button
               span.lib-fav-btn-icon.far.fa-star
+
+  #compiler-search-result-tpl
+    .card
+      .card-header
+        span
+          b.compiler-name &nbsp;
+        span.compiler-version
+          select.custom-select.custom-select-sm.compiler-version-select
+            option -
+      .card-body
+        p.compiler-description &nbsp;
+        .compiler-examples
+        div
+          span.compiler-website
+            a.compiler-website-link(href='#' target='_blank' rel='noopener') Website
+          span.compiler-fav
+            button.btn.btn-sm.compiler-fav-button
+              span.compiler-fav-btn-icon.far.fa-star

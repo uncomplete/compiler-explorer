@@ -734,6 +734,65 @@ div.populararguments div.dropdown-menu {
     display: none;
 }
 
+#compiler-selection .modal-body {
+    overflow-y: scroll;
+}
+
+#compiler-selection .compiler-search-button {
+    margin-left: 10px;
+}
+
+#compiler-selection .compilers-how-to-use {
+    font-size: smaller;
+}
+
+#compiler-selection .compilers-selected-col {
+    padding: 0 15px 0 0;
+    min-width: 250px;
+    max-width: 250px;
+}
+
+#compiler-selection .compilers-results-col {
+    padding: 0 0 0 0;
+    min-width: 450px;
+    max-width: 450px;
+}
+
+#compiler-selection .compiler-results-items .card {
+    margin-bottom: 3px;
+}
+
+#compiler-selection.mobile .compiler-results-items .card-body {
+    display: none;
+}
+
+#compiler-selection.mobile .compilers-results-col {
+    min-width: 250px;
+    max-width: 450px;
+}
+
+#compiler-selection .compilers-results-col span.compiler-version {
+    float: right;
+}
+
+#compiler-selection .compilers-results-col span.compiler-website {
+    float: left;
+}
+
+#compiler-selection .compilers-results-col span.compiler-fav {
+    float: right;
+}
+
+#compiler-selection .compilers-favorites-col {
+    padding: 0 0 0 15px;
+    min-width: 200px;
+    max-width: 200px;
+}
+
+#compiler-selection.mobile .compilers-favorites-col {
+    display: none;
+}
+
 #timing-info .modal-content {
     min-width: 500px;
     min-height: 400px;

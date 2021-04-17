@@ -38,6 +38,7 @@ var Alert = require('../alert');
 var bigInt = require('big-integer');
 var local = require('../local');
 var Libraries = require('../libs-widget-ext');
+var Compilers = require('../compilers-widget-ext');
 var codeLensHandler = require('../codelens-handler');
 var monacoConfig = require('../monaco-config');
 var timingInfoWidget = require('../timing-info-widget');
@@ -159,6 +160,7 @@ function Compiler(hub, container, state) {
     this.compilerSelectizer = this.compilerPicker[0].selectize;
 
     this.initLibraries(state);
+    this.initCompilers(state);
 
     this.initEditorActions();
     this.initEditorCommands();
@@ -1077,6 +1079,7 @@ Compiler.prototype.initButtons = function (state) {
     this.cfgButton = this.domRoot.find('.btn.view-cfg');
     this.executorButton = this.domRoot.find('.create-executor');
     this.libsButton = this.domRoot.find('.btn.show-libs');
+    this.compilersButton = this.domRoot.find('.btn.show-compilers');
 
     this.compileInfoLabel = this.domRoot.find('.compile-info');
     this.compileClearCache = this.domRoot.find('.clear-cache');
@@ -1138,6 +1141,11 @@ Compiler.prototype.initLibraries = function (state) {
 
 Compiler.prototype.updateLibraries = function () {
     if (this.libsWidget) this.libsWidget.setNewLangId(this.currentLangId, this.compiler.id, this.compiler.libs);
+};
+
+Compiler.prototype.initCompilers = function (state) {
+    this.compilersWidget = new Compilers.Widget(this.currentLangId, this.getCurrentLangCompilers(), this.compilersButton,
+        state, _.bind(this.onLibsChanged, this));
 };
 
 Compiler.prototype.supportsTool = function (toolId) {

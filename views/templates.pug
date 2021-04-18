@@ -412,9 +412,17 @@
       button.btn.btn-sm.lib-remove
         span.fas.fa-trash
 
+  #compiler-selected-tpl
+    div
+      button.btn.btn-md.compiler-name-and-version &nbsp;
+
   #lib-favorite-tpl
     div
       button.btn.btn-md.lib-name-and-version &nbsp;
+
+  #compiler-favorite-tpl
+    div
+      button.btn.btn-md.compiler-name-and-version &nbsp;
 
   #lib-search-result-tpl
     .card
@@ -446,8 +454,6 @@
         p.compiler-description &nbsp;
         .compiler-examples
         div
-          span.compiler-website
-            a.compiler-website-link(href='#' target='_blank' rel='noopener') Website
           span.compiler-fav
             button.btn.btn-sm.compiler-fav-button
               span.compiler-fav-btn-icon.far.fa-star

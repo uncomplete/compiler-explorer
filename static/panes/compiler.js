@@ -1144,7 +1144,8 @@ Compiler.prototype.updateLibraries = function () {
 };
 
 Compiler.prototype.initCompilers = function (state) {
-    this.compilersWidget = new Compilers.Widget(this.currentLangId, this.getCurrentLangCompilers(), this.compilersButton,
+    this.compilersWidget = new Compilers.Widget(this.currentLangId,
+        this.getCurrentLangCompilers(), this.compilersButton,
         state, _.bind(this.onLibsChanged, this));
 };
 

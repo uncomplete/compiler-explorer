@@ -22,8 +22,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-var options = require('options'),
-    _ = require('underscore'),
+var _ = require('underscore'),
     local = require('./local'),
     $ = require('jquery');
 
@@ -32,23 +31,17 @@ function CompilersWidgetExt(langId, possibleCompilers, dropdownButton, state, on
     if (state.compiler) {
         this.currentCompilerId = state.compiler;
     } else {
-        this.currentCompilerId = '_default_';
+        this.currentCompilerId = false;
     }
     this.currentLangId = langId;
     this.domRoot = $('#compiler-selection').clone(true);
+    this.groupedResults = {};
     this.onChangeCallback = function () {
         this.updateButton();
         onChangeCallback();
     };
     this.availableCompilers = {};
     this.updateAvailableCompilers(possibleCompilers);
-    _.each(state.compilers, _.bind(function (compiler) {
-        if (compiler.name && compiler.ver) {
-            this.markCompiler(compiler.name, compiler.ver, true);
-        } else {
-            this.markCompiler(compiler.id, compiler.version, true);
-        }
-    }, this));
 
     this.fullRefresh();
 
@@ -95,7 +88,7 @@ CompilersWidgetExt.prototype.updateButton = function () {
 CompilersWidgetExt.prototype.getFavorites = function () {
     var storkey = 'favcompilers';
 
-    return JSON.parse(local.get(storkey, '{}'));
+    return JSON.parse(local.get(storkey, '[]'));
 };
 
 CompilersWidgetExt.prototype.setFavorites = function (faves) {
@@ -104,47 +97,40 @@ CompilersWidgetExt.prototype.setFavorites = function (faves) {
     local.set(storkey, JSON.stringify(faves));
 };
 
-CompilersWidgetExt.prototype.isAFavorite = function (compilerId, versionId) {
+CompilersWidgetExt.prototype.isAFavorite = function (compilerId) {
     var faves = this.getFavorites();
-    if (faves[compilerId]) {
-        return faves[compilerId].includes(versionId);
-    }
-
-    return false;
+    return faves.includes(compilerId);
 };
 
-CompilersWidgetExt.prototype.addToFavorites = function (compilerId, versionId) {
+CompilersWidgetExt.prototype.addToFavorites = function (compilerId) {
     var faves = this.getFavorites();
-    if (faves[compilerId]) {
-        faves[compilerId].push(versionId);
-    } else {
-        faves[compilerId] = [];
-        faves[compilerId].push(versionId);
+    if (!faves.includes(compilerId)) {
+        faves.push(compilerId);
     }
 
     this.setFavorites(faves);
 };
 
-CompilersWidgetExt.prototype.removeFromFavorites = function (compilerId, versionId) {
+CompilersWidgetExt.prototype.removeFromFavorites = function (compilerId) {
     var faves = this.getFavorites();
-    if (faves[compilerId]) {
-        faves[compilerId] = _.filter(faves[compilerId], function (v) {
-            return (v !== versionId);
+    if (faves.includes(compilerId)) {
+        faves = faves.filter(function (id) {
+            return (id !== compilerId);
         });
     }
 
     this.setFavorites(faves);
 };
 
-CompilersWidgetExt.prototype.newFavoriteCompilerDiv = function (compilerId, versionId, compiler, version) {
+CompilersWidgetExt.prototype.newFavoriteCompilerDiv = function (compilerId, compiler) {
     var template = $('#compiler-favorite-tpl');
 
     var compilerDiv = $(template.children()[0].cloneNode(true));
 
     var quickSelectButton = compilerDiv.find('.compiler-name-and-version');
-    quickSelectButton.html(compiler.name + ' ' + version.version);
+    quickSelectButton.html(compiler.name);
     quickSelectButton.on('click', _.bind(function () {
-        this.selectCompilerAndVersion(compilerId, versionId);
+        this.selectCompilerAndVersion(compilerId);
         this.showSelectedCompilers();
         this.onChangeCallback();
     }, this));
@@ -157,33 +143,29 @@ CompilersWidgetExt.prototype.showFavorites = function () {
     favoritesDiv.html('');
 
     var faves = this.getFavorites();
-    _.each(faves, _.bind(function (versionArr, compilerId) {
-        _.each(versionArr, _.bind(function (versionId) {
-            var compiler = this.getCompilerInfoById(compilerId);
-            if (compiler) {
-                var version = compiler.versions[versionId];
-                if (version) {
-                    var div = this.newFavoriteCompilerDiv(compilerId, versionId, compiler, version);
-                    favoritesDiv.append(div);
-                }
-            }
-        }, this));
+    _.each(faves, _.bind(function (compilerId) {
+        var compiler = this.getCompilerInfoById(compilerId);
+        if (compiler) {
+            var div = this.newFavoriteCompilerDiv(compilerId, compiler);
+            favoritesDiv.append(div);
+        }
     }, this));
 };
 
 CompilersWidgetExt.prototype.getAndEmptySearchResults = function () {
     var searchResults = this.domRoot.find('.compiler-results-items');
     searchResults.html('');
+    this.groupedResults = {};
     return searchResults;
 };
 
-CompilersWidgetExt.prototype.newSelectedCompilerDiv = function (compilerId, versionId, compiler, version) {
+CompilersWidgetExt.prototype.newSelectedCompilerDiv = function (compilerId, compiler) {
     var template = $('#compiler-selected-tpl');
 
     var compilerDiv = $(template.children()[0].cloneNode(true));
 
     var detailsButton = compilerDiv.find('.compiler-name-and-version');
-    detailsButton.html(compiler.name + ' ' + version.version);
+    detailsButton.html(compiler.name);
     detailsButton.on('click', _.bind(function () {
         var searchResults = this.getAndEmptySearchResults();
         this.addSearchResult(compilerId, compiler, searchResults);
@@ -191,7 +173,7 @@ CompilersWidgetExt.prototype.newSelectedCompilerDiv = function (compilerId, vers
 
     var deleteButton = compilerDiv.find('.compiler-remove');
     deleteButton.on('click', _.bind(function () {
-        this.markCompiler(compilerId, versionId, false);
+        //this.markCompiler(compilerId, versionId, false);
         compilerDiv.remove();
         this.showSelectedCompilers();
         this.onChangeCallback();
@@ -225,48 +207,64 @@ CompilersWidgetExt.prototype.conjureUpExamples = function (result, compiler) {
 CompilersWidgetExt.prototype.newSearchResult = function (compilerId, compiler) {
     var template = $('#compiler-search-result-tpl');
 
-    var result = $(template.children()[0].cloneNode(true));
-    result.find('.compiler-name').html(compiler.name);
-    if (!compiler.description) {
-        result.find('.compiler-description').hide();
-    } else {
-        result.find('.compiler-description').html(compiler.description);
-    }
-    result.find('.compiler-website-link').attr('href', compiler.url ? compiler.url : '#');
+    var result;
+    var faveButton;
+    var faveStar;
+    var versions;
 
-    this.conjureUpExamples(result, compiler);
-
-    var faveButton = result.find('.compiler-fav-button');
-    var faveStar = faveButton.find('.compiler-fav-btn-icon');
-    faveButton.hide();
-
-    var versions = result.find('.compiler-version-select');
-    versions.html('');
-    versions.append($('<option value="">-</option>'));
-    _.each(compiler.versions, _.bind(function (version, versionId) {
-        var option = $('<option>');
-        if (version.used) {
-            option.attr('selected','selected');
-
-            if (this.isAFavorite(compilerId, versionId)) {
-                faveStar.removeClass('far').addClass('fas');
-            }
-
-            faveButton.show();
+    if (compiler.groupName && !this.groupedResults[compiler.groupName]) {
+        result = $(template.children()[0].cloneNode(true));
+        result.find('.compiler-name').html(compiler.groupName);
+        if (!compiler.description) {
+            result.find('.compiler-description').hide();
+        } else {
+            result.find('.compiler-description').html(compiler.description);
         }
-        option.attr('value', versionId);
-        option.html(version.version);
-        versions.append(option);
-    }, this));
+
+        this.conjureUpExamples(result, compiler);
+
+        this.groupedResults[compiler.groupName] = {
+            node: result,
+        };
+
+        faveButton = result.find('.compiler-fav-button');
+        faveStar = faveButton.find('.compiler-fav-btn-icon');
+        faveButton.hide();
+
+        versions = result.find('.compiler-version-select');
+        versions.html('');
+        versions.append($('<option value="">-</option>'));
+    } else {
+        result = this.groupedResults[compiler.groupName].node;
+        faveButton = result.find('.compiler-fav-button');
+        faveStar = faveButton.find('.compiler-fav-btn-icon');
+        versions = result.find('.compiler-version-select');
+    }
+
+    var isUsed = (compilerId === this.currentCompilerId);
+
+    var option = $('<option>');
+    if (isUsed) {
+        option.attr('selected','selected');
+
+        if (this.isAFavorite(compilerId)) {
+            faveStar.removeClass('far').addClass('fas');
+        }
+
+        faveButton.show();
+    }
+    option.attr('value', compilerId);
+    option.html(compiler.name);
+    versions.append(option);
 
     faveButton.on('click', _.bind(function () {
         var option = versions.find('option:selected');
-        var verId = option.attr('value');
-        if (this.isAFavorite(compilerId, verId)) {
-            this.removeFromFavorites(compilerId, verId);
+        var compilerId = option.attr('value');
+        if (this.isAFavorite(compilerId)) {
+            this.removeFromFavorites(compilerId);
             faveStar.removeClass('fas').addClass('far');
         } else {
-            this.addToFavorites(compilerId, verId);
+            this.addToFavorites(compilerId);
             faveStar.removeClass('far').addClass('fas');
         }
         this.showFavorites();
@@ -276,10 +274,10 @@ CompilersWidgetExt.prototype.newSearchResult = function (compilerId, compiler) {
         var option = versions.find('option:selected');
         var verId = option.attr('value');
 
-        this.selectCompilerAndVersion(compilerId, verId);
+        this.selectCompilerAndVersion(compilerId);
         this.showSelectedCompilers();
 
-        if (this.isAFavorite(compilerId, verId)) {
+        if (this.isAFavorite(compilerId)) {
             faveStar.removeClass('far').addClass('fas');
         } else {
             faveStar.removeClass('fas').addClass('far');
@@ -348,11 +346,10 @@ CompilersWidgetExt.prototype.showSelectedCompilers = function () {
     items.html('');
 
     var selectedCompilers = this.listUsedCompilers();
-    _.each(selectedCompilers, _.bind(function (versionId, compilerId) {
+    _.each(selectedCompilers, _.bind(function (compilerId) {
         var compiler = this.availableCompilers[this.currentLangId][compilerId];
-        var version = compiler.versions[versionId];
 
-        var compilerDiv = this.newSelectedCompilerDiv(compilerId, versionId, compiler, version);
+        var compilerDiv = this.newSelectedCompilerDiv(compilerId, compiler);
         items.append(compilerDiv);
     }, this));
 };
@@ -374,139 +371,45 @@ CompilersWidgetExt.prototype.showSelectedCompilersAsSearchResults = function () 
     }, this));
 };
 
-CompilersWidgetExt.prototype.initLangDefaultCompilers = function () {
-    var defaultCompiler = options.defaultCompiler[this.currentLangId];
-    if (!defaultCompiler) return;
-    _.each(defaultCompiler.split(':'), _.bind(function (compilerPair) {
-        var pairSplits = compilerPair.split('.');
-        if (pairSplits.length === 2) {
-            var compiler = pairSplits[0];
-            var ver = pairSplits[1];
-            this.markCompiler(compiler, ver, true);
-        }
-    }, this));
-};
-
 CompilersWidgetExt.prototype.updateAvailableCompilers = function (possibleCompilers) {
     if (!this.availableCompilers[this.currentLangId]) {
-        this.availableCompilers[this.currentLangId] = {};
+        this.availableCompilers[this.currentLangId] = possibleCompilers;
     }
-
-    if (!this.availableCompilers[this.currentLangId][this.currentCompilerId]) {
-        if (this.currentCompilerId === '_default_') {
-            this.availableCompilers[this.currentLangId] =
-                $.extend(true, {}, options.compilers[this.currentLangId]);
-        } else {
-            this.availableCompilers[this.currentLangId] =
-                $.extend(true, {}, possibleCompilers);
-        }
-    }
-
-    this.initLangDefaultCompilers();
 };
 
 CompilersWidgetExt.prototype.setNewLangId = function (langId, compilerId, possibleCompilers) {
-    var compilersInUse = this.listUsedCompilers();
-
     this.currentLangId = langId;
-
-    if (compilerId) {
-        this.currentCompilerId = compilerId;
-    } else {
-        this.currentCompilerId = '_default_';
-    }
+    this.currentCompilerId = compilerId;
 
     // Clear the dom Root so it gets rebuilt with the new language compilers
     this.updateAvailableCompilers(possibleCompilers);
-
-    _.forEach(compilersInUse, _.bind(function (version, compiler) {
-        this.markCompiler(compiler, version, true);
-    }, this));
 
     this.fullRefresh();
     this.onChangeCallback();
 };
 
-CompilersWidgetExt.prototype.getVersionOrAlias = function (name, version) {
-    if (this.availableCompilers[this.currentLangId] &&
-        this.availableCompilers[this.currentLangId][this.currentCompilerId] &&
-        this.availableCompilers[this.currentLangId][this.currentCompilerId][name]) {
-        if (this.availableCompilers[this.currentLangId][this.currentCompilerId][name].versions[version]) {
-            return version;
-        } else {
-            return _.findKey(
-                this.availableCompilers[this.currentLangId][this.currentCompilerId][name].versions,
-                function (ver) {
-                    return ver.alias && ver.alias.includes(version);
-                });
-        }
-    }
-};
-
 CompilersWidgetExt.prototype.getCompilerInfoById = function (compilerId) {
-    if (this.availableCompilers[this.currentLangId] &&
-        this.availableCompilers[this.currentLangId][this.currentCompilerId] &&
-        this.availableCompilers[this.currentLangId][this.currentCompilerId][compilerId]) {
-        return this.availableCompilers[this.currentLangId][this.currentCompilerId][compilerId];
+    if (this.availableCompilers[this.currentLangId]) {
+        return this.availableCompilers[this.currentLangId][compilerId];
     }
 
     return false;
 };
 
-CompilersWidgetExt.prototype.markCompiler = function (name, version, used) {
-    var actualVersion = this.getVersionOrAlias(name, version);
-
-    if (this.availableCompilers[this.currentLangId] &&
-        this.availableCompilers[this.currentLangId][this.currentCompilerId] &&
-        this.availableCompilers[this.currentLangId][this.currentCompilerId][name] &&
-        this.availableCompilers[this.currentLangId][this.currentCompilerId][name].versions[actualVersion]) {
-        this.availableCompilers[this.currentLangId][this.currentCompilerId][name].versions[actualVersion].used = used;
-    }
-};
-
-CompilersWidgetExt.prototype.selectCompilerAndVersion = function (compilerId, versionId) {
-    if (this.availableCompilers[this.currentLangId] &&
-        this.availableCompilers[this.currentLangId][this.currentCompilerId] &&
-        this.availableCompilers[this.currentLangId][this.currentCompilerId][compilerId]) {
-
-        _.each(
-            this.availableCompilers[this.currentLangId][this.currentCompilerId][compilerId].versions,
-            function (curver, curverId) {
-                curver.used = curverId === versionId;
-            });
-    }
+CompilersWidgetExt.prototype.selectCompilerAndVersion = function (compilerId) {
+    this.currentCompilerId = compilerId;
 };
 
 CompilersWidgetExt.prototype.get = function () {
-    return _.map(this.listUsedCompilers(), function (item, compilerId) {
-        return {name: compilerId, ver: item};
-    });
+    return this.listUsedCompilers();
 };
 
 CompilersWidgetExt.prototype.listUsedCompilers = function () {
-    var compilers = {};
-    _.each(this.availableCompilers[this.currentLangId][this.currentCompilerId], function (compiler, compilerId) {
-        _.each(compiler.versions, function (version, ver) {
-            if (compiler.versions[ver].used) {
-                // We trust the invariant of only 1 used version at any given time per compiler
-                compilers[compilerId] = ver;
-            }
-        });
-    });
-    return compilers;
-};
-
-CompilersWidgetExt.prototype.getCompilersInUse = function () {
-    var compilers = [];
-    _.each(this.availableCompilers[this.currentLangId][this.currentCompilerId], function (compiler, compilerId) {
-        _.each(compiler.versions, function (version, ver) {
-            if (compiler.versions[ver].used) {
-                var compilerVer = Object.assign({compilerId: compilerId, versionId: ver}, compiler.versions[ver]);
-                compilers.push(compilerVer);
-            }
-        });
-    });
-    return compilers;
+    if (this.currentCompilerId) {
+        return [this.currentCompilerId];
+    } else {
+        return [];
+    }
 };
 
 module.exports = {

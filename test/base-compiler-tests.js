@@ -22,20 +22,21 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { match, mock, restore, stub } from 'sinon';
-
-import { BaseCompiler } from '../lib/base-compiler';
-import { BuildEnvSetupBase } from '../lib/buildenvsetup';
-import { Win32Compiler } from '../lib/compilers/win32';
+import sinon from 'sinon';
+import {BaseCompiler} from '../lib/base-compiler';
+import {BuildEnvSetupBase} from '../lib/buildenvsetup';
+import {Win32Compiler} from '../lib/compilers/win32';
 import * as exec from '../lib/exec';
 
-import { fs, makeCompilationEnvironment, path, should } from './utils';
+import {fs, makeCompilationEnvironment, path, should} from './utils';
+
+const {match, mock, restore, stub} = sinon;
 
 const languages = {
     'c++': {id: 'c++'},
 };
 
-describe('Basic compiler invariants', function () {
+describe('Basic compiler invariants', function() {
     let ce, compiler;
     const info = {
         exe: null,
@@ -91,7 +92,7 @@ describe('Basic compiler invariants', function () {
     });
 });
 
-describe('Compiler execution', function () {
+describe('Compiler execution', function() {
     let ce, compiler, compilerNoExec, win32compiler;
     const executingCompilerInfo = {
         exe: null,
